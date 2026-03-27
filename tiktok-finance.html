@@ -133,7 +133,7 @@ var XLSX_LOADED=false;
 function loadXLSX(cb){if(XLSX_LOADED)return cb();var u=['https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js','https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js','https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'];function t(i){if(i>=u.length){setStatus('Impossibile caricare XLSX lib','error');return}var s=document.createElement('script');s.src=u[i];s.onload=function(){XLSX_LOADED=true;cb()};s.onerror=function(){t(i+1)};document.head.appendChild(s)}t(0)}
 
 var S={ordersFile:null,settlementFile:null,ordersRaw:null,settlementRaw:null,
-  matched:[],unmatchedOrders:[],unmatchedSettlements:[],
+  matched:[],unmatchedOrders:[],unmatchedSettlements:[],sampleOrders:[],cancelledOrders:[],
   selectedMonth:'all',sortKey:'orderDate',sortDir:'desc',filterSearch:'',filterAff:'all',filterRef:'all'};
 
 // Column maps
@@ -162,7 +162,8 @@ var ORD_MAP={
   orderId:['Order ID'],orderStatus:['Order Status'],orderSubstatus:['Order Substatus'],
   cancelReturnType:['Cancelation/Return Type'],sellerSku:['Seller SKU'],productName:['Product Name'],
   quantity:['Quantity'],createdTime:['Created Time'],deliveredTime:['Delivered Time'],
-  deliveryOption:['Delivery Option'],productCategory:['Product Category']
+  deliveryOption:['Delivery Option'],productCategory:['Product Category'],
+  orderAmount:['Order Amount'],paymentMethod:['Payment Method']
 };
 
 // Utils
@@ -220,7 +221,12 @@ function runMatch(){
   S.ordersRaw.rows.forEach(function(row){
     function g(k){return oCm[k]!=null?row[oCm[k]]:null}
     var id=cl(g('orderId'));if(!id)return;
-    if(!oMap[id])oMap[id]={orderId:id,orderStatus:cl(g('orderStatus')),createdTime:pD(g('createdTime')),deliveredTime:pD(g('deliveredTime')),products:[],skus:[],totalQty:0};
+    if(!oMap[id]){
+      var amt=pN(g('orderAmount')),pm=cl(g('paymentMethod'));
+      oMap[id]={orderId:id,orderStatus:cl(g('orderStatus')),createdTime:pD(g('createdTime')),deliveredTime:pD(g('deliveredTime')),
+        products:[],skus:[],totalQty:0,orderAmount:amt,paymentMethod:pm,
+        isSample:amt===0&&!pm};
+    }
     var pn=cl(g('productName')),sk=cl(g('sellerSku'));
     if(pn&&oMap[id].products.indexOf(pn)===-1)oMap[id].products.push(pn);
     if(sk&&oMap[id].skus.indexOf(sk)===-1)oMap[id].skus.push(sk);
@@ -247,7 +253,7 @@ function runMatch(){
   });
 
   // Match
-  var matched=[],unmO=[],unmS=[],used={};
+  var matched=[],unmO=[],unmS=[],sampleOrders=[],cancelledOrders=[],used={};
   for(var id in oMap){
     var ord=oMap[id],se=sMap[id];
     if(se){
@@ -255,7 +261,7 @@ function runMatch(){
       var a={orderId:id,
         orderDate:ord.createdTime||se.createDate,deliveryDate:ord.deliveredTime||se.delivDate,
         orderStatus:ord.orderStatus,productName:ord.products.join(', ')||se.products.join(', '),
-        sellerSku:ord.skus.join(', '),quantity:ord.totalQty,
+        sellerSku:ord.skus.join(', '),quantity:ord.totalQty,isSample:false,
         stmtDate:se.stmtDate,settLines:se.lines};
       // Copy all financial fields from settlement
       sFields.forEach(function(f){a[f]=se[f]||0});
@@ -277,11 +283,18 @@ function runMatch(){
       a.hasAffOrganic=a.affOrganic!==0;a.hasAffAds=a.affAds!==0;a.hasRefund=a.refundSubtotal!==0||a.customerRefund!==0;
       a.isFullRefund=a.totalSettlement===0&&a.refundSubtotal!==0;
       matched.push(a);
-    }else{unmO.push(ord)}
+    }else if(ord.isSample){
+      sampleOrders.push(ord);
+    }else if(ord.orderStatus&&(ord.orderStatus.toLowerCase().includes('annull')||ord.orderStatus.toLowerCase().includes('cancel'))){
+      cancelledOrders.push(ord);
+    }else{
+      unmO.push(ord);
+    }
   }
   for(var sid in sMap){if(!used[sid]&&!oMap[sid])unmS.push(sMap[sid])}
 
   S.matched=matched;S.unmatchedOrders=unmO;S.unmatchedSettlements=unmS;
+  S.sampleOrders=sampleOrders;S.cancelledOrders=cancelledOrders;
   console.log('Match:',matched.length,'| Unmatched orders:',unmO.length,'| Unmatched sett:',unmS.length);
   renderAll();
 }
@@ -297,9 +310,12 @@ function getF(){
   return d;
 }
 function renderSummary(){
+  var totalOrders=S.matched.length+S.unmatchedOrders.length+S.sampleOrders.length+S.cancelledOrders.length;
   var h='<span class="badge badge-ok">'+S.matched.length+' riconciliati</span>';
-  if(S.unmatchedOrders.length)h+='<span class="badge badge-warn">'+S.unmatchedOrders.length+' ordini senza incasso</span>';
-  if(S.unmatchedSettlements.length)h+='<span class="badge badge-warn">'+S.unmatchedSettlements.length+' incassi senza ordine</span>';
+  if(S.sampleOrders.length)h+='<span class="badge" style="background:#e0e7ff;color:#3730a3">'+S.sampleOrders.length+' campioni gratuiti</span>';
+  if(S.cancelledOrders.length)h+='<span class="badge" style="background:#f1f5f9;color:#475569">'+S.cancelledOrders.length+' annullati</span>';
+  if(S.unmatchedOrders.length)h+='<span class="badge badge-warn">'+S.unmatchedOrders.length+' in attesa incasso</span>';
+  h+='<span class="badge" style="background:#f8fafc;color:#64748b;border:1px solid #e2e8f0">'+totalOrders+' ordini totali</span>';
   document.getElementById('match-summary').innerHTML=h;
 }
 function renderMonths(){
@@ -333,14 +349,21 @@ function renderDashboard(){
   var nOrdAffAds=data.filter(function(d){return d.hasAffAds}).length;
   var nRefund=data.filter(function(d){return d.hasRefund}).length;
 
+  var nSamples=S.sampleOrders.length;
+  var sampleShipCost=nSamples*6;
+  var realSold=data.length;
+  var totalAll=realSold+nSamples+S.cancelledOrders.length+S.unmatchedOrders.length;
+
   var h='<div class="stats-grid">';
-  h+=sc('Lordo prodotto',fE(T.sub),'',data.length+' ordini riconciliati');
+  h+=sc('Ordini venduti',realSold+'','',totalAll+' totali — '+nSamples+' campioni — '+S.cancelledOrders.length+' annullati');
+  h+=sc('Lordo prodotto',fE(T.sub),'','Subtotal before discounts');
   h+=sc('Pagato dal cliente',fE(T.custPay),'blue','Customer payment');
   h+=sc('Incasso netto',fE(T.sett),'green',fP(T.custPay?T.sett/T.custPay:0)+' del pagato cliente');
   h+=sc('Commissione TikTok',fE(T.ttC),'red',fP(T.custPay?T.ttC/T.custPay:0)+' del pagato cliente');
   h+=sc('Affiliati organici',fE(T.affOrg),'amber',nOrdAffOrg+' ordini');
   h+=sc('Affiliati Shop Ads',fE(T.affAds),'amber',nOrdAffAds+' ordini (GMV Max)');
   h+=sc('Rimborsi prodotto',fE(T.refund),'red',nRefund+' ordini');
+  h+=sc('Campioni gratuiti',nSamples+'','blue','Costo stimato spedizioni: '+fE(sampleShipCost)+' ('+nSamples+' x 6€ iva incl.)');
   h+=sc('Ritardo medio pag.',mD+' gg','blue','dalla consegna al settlement');
   h+='</div>';
 
@@ -445,10 +468,15 @@ function renderChecks(){
     settGtCust.length===0?'Nessuna anomalia':settGtCust.length+' ordini dove il settlement supera il customer payment (sconti piattaforma o shipping subsidy)',
     settGtCust.length<=20?settGtCust:null);
 
-  // 8. Unmatched orders summary
+  // 8. Unmatched orders summary (excludes samples and cancelled)
+  var totalNonRec=S.sampleOrders.length+S.cancelledOrders.length+S.unmatchedOrders.length;
   h+=chk(S.unmatchedOrders.length===0?'ok':S.unmatchedOrders.length<50?'warn':'err',
-    S.unmatchedOrders.length+' ordini senza incasso',
-    'Ordini presenti nel file ordini ma senza corrispondente settlement. Normale per ordini di fine mese.',null);
+    totalNonRec+' ordini senza settlement: '+S.sampleOrders.length+' campioni, '+S.cancelledOrders.length+' annullati, '+S.unmatchedOrders.length+' in attesa',
+    'Campioni gratuiti e annullati sono normali. Solo gli ordini in attesa di incasso richiedono monitoraggio (>31gg dalla consegna).',null);
+
+  // 9. Campioni gratuiti summary
+  h+=chk('ok','Campioni gratuiti: '+S.sampleOrders.length+' ordini a 0€',
+    'Ordini senza pagamento inviati ai creator. Costo stimato spedizioni: '+fE(S.sampleOrders.length*6)+' ('+S.sampleOrders.length+' x 6€ iva incl.)',null);
 
   document.getElementById('tab-checks').innerHTML='<div class="card"><h2>Controlli e Verifiche</h2><p style="font-size:13px;color:#64748b;margin-bottom:20px">Controlli automatici su '+data.length+' ordini riconciliati. Clicca su un controllo per vedere i dettagli.</p>'+h+'</div>';
 }
@@ -607,25 +635,71 @@ function exportCSV(){
 }
 
 function renderUnmatched(){
-  var h='<div class="card"><h2>Non Riconciliati</h2>';
-  if(!S.unmatchedOrders.length&&!S.unmatchedSettlements.length){h+='<p class="positive">Tutti riconciliati!</p></div>';document.getElementById('tab-unmatched').innerHTML=h;return}
-  if(S.unmatchedOrders.length){
-    h+='<div class="match-summary"><span class="badge badge-warn">'+S.unmatchedOrders.length+' ordini senza incasso</span></div>';
-    h+='<p style="font-size:13px;color:#64748b;margin-bottom:12px">Ordini nel file ordini senza corrispondente settlement. Normale per ordini di fine mese (&lt;20gg dalla consegna).</p>';
-    h+='<button class="toggle-btn" onclick="document.getElementById(\'uo\').classList.toggle(\'hidden\')">Mostra/Nascondi</button>';
-    h+='<div id="uo" class="hidden detail-row"><table><thead><tr><th>Order ID</th><th>Creazione</th><th>Consegna</th><th>Stato</th><th>Prodotto</th></tr></thead><tbody>';
-    S.unmatchedOrders.forEach(function(o){h+='<tr><td style="font-family:monospace;font-size:11px">'+esc(o.orderId)+'</td><td>'+fD(o.createdTime)+'</td><td>'+fD(o.deliveredTime)+'</td><td>'+esc(o.orderStatus)+'</td><td>'+esc((o.products||[]).join(', ').substring(0,40))+'</td></tr>'});
-    h+='</tbody></table></div>';
+  var totalNonRec=S.sampleOrders.length+S.cancelledOrders.length+S.unmatchedOrders.length;
+  var h='<div class="card"><h2>Non Riconciliati ('+totalNonRec+' ordini)</h2>';
+  if(!totalNonRec&&!S.unmatchedSettlements.length){h+='<p class="positive">Tutti riconciliati!</p></div>';document.getElementById('tab-unmatched').innerHTML=h;return}
+
+  // Summary breakdown
+  h+='<div style="background:#f8fafc;border-radius:8px;padding:16px;margin-bottom:20px;font-size:14px">';
+  h+='<div style="display:grid;grid-template-columns:1fr auto;gap:4px 24px;max-width:500px">';
+  h+='<span>Ordini senza settlement:</span><strong>'+totalNonRec+'</strong>';
+  if(S.sampleOrders.length)h+='<span style="padding-left:16px;color:#4f46e5">Campioni gratuiti (creator):</span><strong style="color:#4f46e5">'+S.sampleOrders.length+'</strong>';
+  if(S.cancelledOrders.length)h+='<span style="padding-left:16px;color:#64748b">Annullati:</span><strong style="color:#64748b">'+S.cancelledOrders.length+'</strong>';
+  if(S.unmatchedOrders.length)h+='<span style="padding-left:16px;color:#d97706">In attesa di incasso:</span><strong style="color:#d97706">'+S.unmatchedOrders.length+'</strong>';
+  h+='</div>';
+  h+='<div style="margin-top:8px;font-size:12px;color:#94a3b8">Costo stimato spedizioni campioni: '+fE(S.sampleOrders.length*6)+' ('+S.sampleOrders.length+' x 6€ iva incl.)</div>';
+  h+='</div>';
+
+  // Campioni gratuiti
+  if(S.sampleOrders.length){
+    h+='<div style="border-left:4px solid #4f46e5;padding:16px;margin-bottom:16px;background:#eef2ff;border-radius:0 8px 8px 0">';
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">';
+    h+='<div><strong style="color:#4f46e5">'+S.sampleOrders.length+' Campioni Gratuiti</strong><br><span style="font-size:12px;color:#64748b">Ordini a 0€ senza metodo di pagamento — inviati ai creator per contenuti</span></div>';
+    h+='<button class="btn btn-primary" onclick="exportSamples()">Export CSV Campioni</button></div>';
+    h+='<button class="toggle-btn" style="margin-top:8px" onclick="document.getElementById(\'samples\').classList.toggle(\'hidden\')">Mostra/Nascondi lista</button>';
+    h+='<div id="samples" class="hidden detail-row" style="margin-top:8px"><table><thead><tr><th>Order ID</th><th>Creazione</th><th>Consegna</th><th>Stato</th><th>Prodotto</th><th>Buyer</th></tr></thead><tbody>';
+    S.sampleOrders.forEach(function(o){h+='<tr><td style="font-family:monospace;font-size:11px">'+esc(o.orderId)+'</td><td>'+fD(o.createdTime)+'</td><td>'+fD(o.deliveredTime)+'</td><td>'+esc(o.orderStatus)+'</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis">'+esc((o.products||[]).join(', ').substring(0,40))+'</td><td>—</td></tr>'});
+    h+='</tbody></table></div></div>';
   }
+
+  // Annullati
+  if(S.cancelledOrders.length){
+    h+='<div style="border-left:4px solid #94a3b8;padding:16px;margin-bottom:16px;background:#f8fafc;border-radius:0 8px 8px 0">';
+    h+='<strong style="color:#64748b">'+S.cancelledOrders.length+' Ordini Annullati</strong><br><span style="font-size:12px;color:#94a3b8">Annullati prima della spedizione — nessun incasso previsto</span>';
+    h+='<button class="toggle-btn" style="margin-top:8px;display:block" onclick="document.getElementById(\'cancelled\').classList.toggle(\'hidden\')">Mostra/Nascondi</button>';
+    h+='<div id="cancelled" class="hidden detail-row" style="margin-top:8px"><table><thead><tr><th>Order ID</th><th>Creazione</th><th>Stato</th><th>Prodotto</th></tr></thead><tbody>';
+    S.cancelledOrders.forEach(function(o){h+='<tr><td style="font-family:monospace;font-size:11px">'+esc(o.orderId)+'</td><td>'+fD(o.createdTime)+'</td><td>'+esc(o.orderStatus)+'</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis">'+esc((o.products||[]).join(', ').substring(0,40))+'</td></tr>'});
+    h+='</tbody></table></div></div>';
+  }
+
+  // In attesa incasso
+  if(S.unmatchedOrders.length){
+    h+='<div style="border-left:4px solid #d97706;padding:16px;margin-bottom:16px;background:#fffbeb;border-radius:0 8px 8px 0">';
+    h+='<strong style="color:#92400e">'+S.unmatchedOrders.length+' Ordini in Attesa di Incasso</strong><br><span style="font-size:12px;color:#64748b">Ordini consegnati/spediti senza settlement. Normale se &lt;31 gg dalla consegna.</span>';
+    h+='<button class="toggle-btn" style="margin-top:8px;display:block" onclick="document.getElementById(\'uo\').classList.toggle(\'hidden\')">Mostra/Nascondi</button>';
+    h+='<div id="uo" class="hidden detail-row" style="margin-top:8px"><table><thead><tr><th>Order ID</th><th>Creazione</th><th>Consegna</th><th>Stato</th><th>Prodotto</th></tr></thead><tbody>';
+    S.unmatchedOrders.forEach(function(o){h+='<tr><td style="font-family:monospace;font-size:11px">'+esc(o.orderId)+'</td><td>'+fD(o.createdTime)+'</td><td>'+fD(o.deliveredTime)+'</td><td>'+esc(o.orderStatus)+'</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis">'+esc((o.products||[]).join(', ').substring(0,40))+'</td></tr>'});
+    h+='</tbody></table></div></div>';
+  }
+
+  // Incassi senza ordine (ignorabili)
   if(S.unmatchedSettlements.length){
-    h+='<div class="match-summary" style="margin-top:16px"><span class="badge badge-warn">'+S.unmatchedSettlements.length+' incassi senza ordine</span></div>';
-    h+='<p style="font-size:13px;color:#64748b;margin-bottom:12px">Settlement relativi a ordini del mese precedente. Ignorabili.</p>';
-    h+='<button class="toggle-btn" onclick="document.getElementById(\'us\').classList.toggle(\'hidden\')">Mostra/Nascondi</button>';
-    h+='<div id="us" class="hidden detail-row"><table><thead><tr><th>Order ID</th><th>Data</th><th>Prodotto</th><th>Settlement</th></tr></thead><tbody>';
-    S.unmatchedSettlements.forEach(function(s){h+='<tr><td style="font-family:monospace;font-size:11px">'+esc(s.orderId)+'</td><td>'+fD(s.stmtDate)+'</td><td>'+esc((s.products||[]).join(', ').substring(0,40))+'</td><td>'+fE(s.totalSettlement)+'</td></tr>'});
-    h+='</tbody></table></div>';
+    h+='<div style="border-left:4px solid #cbd5e1;padding:16px;margin-bottom:16px;background:#f8fafc;border-radius:0 8px 8px 0">';
+    h+='<strong style="color:#64748b">'+S.unmatchedSettlements.length+' Incassi senza ordine</strong><br><span style="font-size:12px;color:#94a3b8">Settlement di ordini del mese precedente — ignorabili.</span>';
+    h+='<button class="toggle-btn" style="margin-top:8px;display:block" onclick="document.getElementById(\'us\').classList.toggle(\'hidden\')">Mostra/Nascondi</button>';
+    h+='<div id="us" class="hidden detail-row" style="margin-top:8px"><table><thead><tr><th>Order ID</th><th>Data</th><th>Prodotto</th><th>Settlement</th></tr></thead><tbody>';
+    S.unmatchedSettlements.forEach(function(s){h+='<tr><td style="font-family:monospace;font-size:11px">'+esc(s.orderId)+'</td><td>'+fD(s.stmtDate)+'</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis">'+esc((s.products||[]).join(', ').substring(0,40))+'</td><td>'+fE(s.totalSettlement)+'</td></tr>'});
+    h+='</tbody></table></div></div>';
   }
   h+='</div>';document.getElementById('tab-unmatched').innerHTML=h;
+}
+
+function exportSamples(){
+  var hdr=['Order ID','Data Creazione','Data Consegna','Stato','Prodotti'];
+  var rows=S.sampleOrders.map(function(o){return[o.orderId,fD(o.createdTime),fD(o.deliveredTime),o.orderStatus,'"'+(o.products||[]).join(', ').replace(/"/g,'""')+'"']});
+  var csv=[hdr].concat(rows).map(function(r){return r.join(';')}).join('\n');
+  var b=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='campioni_gratuiti.csv';a.click();
 }
 
 // ============ MANUAL ============
@@ -651,7 +725,9 @@ function getManualHTML(){
   '<li>Cliccare <strong>"Carica e Analizza"</strong></li></ul>'+
   '<h3><span class="step-num">4</span> Cosa controllare</h3><ul>'+
   '<li><strong>Tab Controlli:</strong> verifiche automatiche su formula, commissioni, anomalie</li>'+
-  '<li><strong>Ordini senza incasso:</strong> normale se &lt;20 gg dalla consegna</li>'+
+  '<li><strong>Campioni gratuiti:</strong> ordini a 0€ senza pagamento, inviati ai creator per contenuti. Costo reale: ~6€/cad di spedizione (iva incl.)</li>'+
+  '<li><strong>Non riconciliati:</strong> suddivisi in campioni, annullati e in attesa di incasso</li>'+
+  '<li><strong>Ordini in attesa:</strong> normale se &lt;31 gg dalla consegna. Oltre 31gg &rarr; investigare</li>'+
   '<li><strong>Incassi senza ordine:</strong> pagamenti del mese precedente, ignorabili</li>'+
   '<li><strong>Margine negativo:</strong> fee + rimborsi &gt; ricavo, da investigare</li></ul>'+
   '<h3><span class="step-num">5</span> Come leggere i numeri</h3><ul>'+
@@ -661,7 +737,13 @@ function getManualHTML(){
   '<li><strong>Commissione TT:</strong> ~5-9% del customer payment (varia per categoria)</li>'+
   '<li><strong>Affiliati organici:</strong> Affiliate Commission — creator non GMV Max</li>'+
   '<li><strong>Affiliati Shop Ads:</strong> Affiliate Shop Ads commission — campagne GMV Max</li>'+
-  '<li><strong>Margine:</strong> Settlement / Customer payment</li></ul></div>';
+  '<li><strong>Margine:</strong> Settlement / Customer payment</li></ul>'+
+  '<h3><span class="step-num">6</span> Campioni Gratuiti</h3><ul>'+
+  '<li>Ordini a 0€ senza metodo di pagamento — inviati ai creator per produrre contenuti video</li>'+
+  '<li>Identificati automaticamente: <strong>Order Amount = 0</strong> + <strong>Payment Method vuoto</strong></li>'+
+  '<li>Non generano incasso, non confondere con resi (che hanno importo &gt; 0)</li>'+
+  '<li>Costo reale: spedizione ~6€ IVA inclusa per campione</li>'+
+  '<li>Esportabili in CSV dalla tab Non Riconciliati</li></ul></div>';
 }
 function renderManual(){document.getElementById('tab-manual').innerHTML=getManualHTML()}
 function showManualStandalone(){var e=document.getElementById('manual-standalone');e.innerHTML=e.innerHTML?'':getManualHTML()}
