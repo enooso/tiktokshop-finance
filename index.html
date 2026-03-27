@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TikTok Shop Finance</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,-apple-system,sans-serif;background:#f8fafc;color:#1e293b;line-height:1.5}
+.container{max-width:1440px;margin:0 auto;padding:24px}
+h1{font-size:24px;font-weight:700}h2{font-size:18px;font-weight:600;margin-bottom:16px}h3{font-size:15px;font-weight:600;margin-bottom:8px}
+.header{display:flex;align-items:center;gap:12px;margin-bottom:32px;padding-bottom:16px;border-bottom:1px solid #e2e8f0}
+.header-icon{width:40px;height:40px;background:#000;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px}
+.header-sub{color:#64748b;font-size:13px;margin-top:2px}
+.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
+.upload-zone{border:2px dashed #cbd5e1;border-radius:12px;padding:40px 24px;text-align:center;cursor:pointer;transition:all .2s;background:#fff}
+.upload-zone:hover{border-color:#3b82f6;background:#eff6ff}
+.upload-zone.loaded{border-color:#22c55e;background:#f0fdf4}
+.upload-icon{font-size:32px;margin-bottom:8px}.upload-label{font-weight:600;font-size:15px;margin-bottom:4px}
+.upload-hint{font-size:12px;color:#94a3b8}.upload-stats{font-size:13px;color:#16a34a;font-weight:500;margin-top:8px}
+.load-bar{text-align:center;margin-bottom:32px}
+.btn-load{padding:14px 48px;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;border:none;background:#1e293b;color:#fff;font-family:inherit;transition:all .2s}
+.btn-load:hover{background:#334155;transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.btn-load:disabled{background:#94a3b8;cursor:not-allowed;transform:none;box-shadow:none}
+.card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid #e2e8f0;margin-bottom:20px}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.stat-card{background:#fff;border-radius:12px;padding:16px 20px;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid #e2e8f0}
+.stat-label{font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.stat-value{font-size:24px;font-weight:700}.stat-sub{font-size:12px;color:#94a3b8;margin-top:2px}
+.green{color:#16a34a}.red{color:#dc2626}.blue{color:#2563eb}.amber{color:#d97706}
+.tabs{display:flex;gap:4px;margin-bottom:20px;background:#f1f5f9;padding:4px;border-radius:10px;width:fit-content;flex-wrap:wrap}
+.tab{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:transparent;color:#64748b;transition:all .15s;font-family:inherit}
+.tab.active{background:#fff;color:#1e293b;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.table-wrap{overflow-x:auto;border-radius:8px;border:1px solid #e2e8f0}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#f8fafc;padding:10px 12px;text-align:left;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#64748b;cursor:pointer;white-space:nowrap;border-bottom:1px solid #e2e8f0;position:sticky;top:0}
+th:hover{background:#f1f5f9}td{padding:8px 12px;border-bottom:1px solid #f1f5f9;white-space:nowrap}tr:hover td{background:#f8fafc}
+.positive{color:#16a34a}.negative{color:#dc2626}
+.filters{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+.filter-input{padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:inherit;min-width:140px}
+.filter-input:focus{outline:none;border-color:#3b82f6}
+.btn{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid #e2e8f0;background:#fff;font-family:inherit;transition:all .15s}
+.btn:hover{background:#f8fafc}.btn-primary{background:#1e293b;color:#fff;border-color:#1e293b}.btn-primary:hover{background:#334155}
+.match-summary{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap}
+.badge{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500}
+.badge-ok{background:#dcfce7;color:#166534}.badge-warn{background:#fef3c7;color:#92400e}.badge-err{background:#fef2f2;color:#991b1b}
+.month-selector{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.month-btn{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid #e2e8f0;background:#fff;font-family:inherit}
+.month-btn.active{background:#1e293b;color:#fff;border-color:#1e293b}
+.bar-chart{display:flex;align-items:flex-end;gap:8px;height:200px;padding:20px 0}
+.bar-col{display:flex;flex-direction:column;align-items:center;flex:1}
+.bar{border-radius:4px 4px 0 0;min-width:30px;transition:height .3s}
+.bar-label{font-size:11px;color:#64748b;margin-top:6px;text-align:center}.bar-value{font-size:11px;font-weight:600;margin-bottom:4px}
+.cost-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f1f5f9}
+.cost-item:last-child{border:none}.cost-dot{width:10px;height:10px;border-radius:50%;margin-right:8px;display:inline-block}
+.cost-name{display:flex;align-items:center;font-size:13px}.cost-values{text-align:right;font-size:13px}.cost-pct{color:#64748b;font-size:11px}
+.hidden{display:none}
+.toggle-btn{background:none;border:none;color:#3b82f6;font-size:13px;cursor:pointer;font-family:inherit;font-weight:500;padding:4px 0}
+.detail-row{max-height:400px;overflow-y:auto;margin-top:8px}
+.manual-content{line-height:1.8;font-size:14px}
+.manual-content h2{font-size:20px;margin-top:24px;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #e2e8f0}
+.manual-content h3{font-size:16px;margin-top:20px;margin-bottom:8px}.manual-content ul{margin:8px 0 8px 24px}.manual-content li{margin-bottom:6px}
+.manual-content .step-num{display:inline-block;width:28px;height:28px;background:#1e293b;color:#fff;border-radius:50%;text-align:center;line-height:28px;font-weight:700;font-size:13px;margin-right:8px}
+.status-msg{text-align:center;padding:12px;font-size:13px;color:#64748b;margin-bottom:12px}
+.status-msg.error{color:#dc2626;background:#fef2f2;border-radius:8px}.status-msg.ok{color:#16a34a;background:#f0fdf4;border-radius:8px}
+tr.expandable{cursor:pointer}tr.expandable:hover td{background:#eff6ff}
+tr.expand-row td{padding:0;background:#f8fafc;border-bottom:2px solid #e2e8f0}
+.order-detail{padding:16px 24px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.od-section{background:#fff;border-radius:8px;padding:12px 16px;border:1px solid #e2e8f0}
+.od-section h4{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#64748b;margin-bottom:8px}
+.od-row{display:flex;justify-content:space-between;padding:4px 0;font-size:13px;border-bottom:1px solid #f1f5f9}
+.od-row:last-child{border:none}.od-row .od-label{color:#475569}.od-row .od-val{font-weight:600;font-variant-numeric:tabular-nums}
+.od-row.od-total{font-weight:700;border-top:2px solid #e2e8f0;margin-top:4px;padding-top:8px}
+.od-row.od-sub{padding-left:12px;color:#64748b;font-size:12px}
+@media(max-width:768px){.order-detail{grid-template-columns:1fr}}
+.check-card{border-left:4px solid;padding:16px;margin-bottom:12px;border-radius:0 8px 8px 0;background:#fff}
+.check-ok{border-color:#22c55e;background:#f0fdf4}.check-warn{border-color:#f59e0b;background:#fffbeb}.check-err{border-color:#ef4444;background:#fef2f2}
+.check-title{font-weight:600;font-size:14px;margin-bottom:4px}.check-detail{font-size:13px;color:#64748b}
+.wf-row{display:flex;justify-content:space-between;padding:8px 16px;border-bottom:1px solid #f1f5f9;font-size:14px}
+.wf-row.wf-total{font-weight:700;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0}
+.wf-row .wf-label{color:#475569}.wf-row .wf-val{font-weight:600;font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="header-icon">TT</div>
+    <div><h1>TikTok Shop Finance</h1><div class="header-sub">Riconciliazione ordini-incassi e analisi margini</div></div>
+    <button class="btn" style="margin-left:auto" onclick="showManualStandalone()">Manuale</button>
+  </div>
+  <div class="upload-grid">
+    <div class="upload-zone" id="zone-orders" ondragover="event.preventDefault();this.style.borderColor='#3b82f6';this.style.background='#eff6ff'" ondragleave="this.style.borderColor='';this.style.background=''" ondrop="handleDrop(event,'orders')" onclick="document.getElementById('file-orders').click()">
+      <input type="file" id="file-orders" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleFileSelect(this,'orders')">
+      <div class="upload-icon">📦</div><div class="upload-label">File Ordini</div>
+      <div class="upload-hint" id="hint-orders">Trascina o clicca per caricare (.xlsx, .csv)</div>
+    </div>
+    <div class="upload-zone" id="zone-settlement" ondragover="event.preventDefault();this.style.borderColor='#3b82f6';this.style.background='#eff6ff'" ondragleave="this.style.borderColor='';this.style.background=''" ondrop="handleDrop(event,'settlement')" onclick="document.getElementById('file-settlement').click()">
+      <input type="file" id="file-settlement" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleFileSelect(this,'settlement')">
+      <div class="upload-icon">💰</div><div class="upload-label">File Settlement/Incassi</div>
+      <div class="upload-hint" id="hint-settlement">Trascina o clicca per caricare (.xlsx, .csv)</div>
+    </div>
+  </div>
+  <div class="load-bar">
+    <div id="status-msg" class="status-msg hidden"></div>
+    <button class="btn-load" id="btn-run" disabled onclick="runAnalysis()">Carica e Analizza</button>
+  </div>
+  <div id="results" class="hidden">
+    <div id="match-summary" class="match-summary"></div>
+    <div id="month-selector" class="month-selector"></div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('dashboard',this)">Dashboard</button>
+      <button class="tab" onclick="switchTab('checks',this)">Controlli</button>
+      <button class="tab" onclick="switchTab('table',this)">Dettaglio Ordini</button>
+      <button class="tab" onclick="switchTab('unmatched',this)">Non Riconciliati</button>
+      <button class="tab" onclick="switchTab('manual',this)">Manuale</button>
+    </div>
+    <div id="tab-dashboard"></div>
+    <div id="tab-checks" class="hidden"></div>
+    <div id="tab-table" class="hidden"></div>
+    <div id="tab-unmatched" class="hidden"></div>
+    <div id="tab-manual" class="hidden"></div>
+  </div>
+  <div id="manual-standalone"></div>
+</div>
+
+<script>
+// === ARCHITECTURE ===
+// Settlement = source of truth for ALL financials
+// Orders = metadata only (status, dates, product names)
+// Every row in the detail table = 1 unique Order ID (pivoted/aggregated)
+
+var XLSX_LOADED=false;
+function loadXLSX(cb){if(XLSX_LOADED)return cb();var u=['https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js','https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js','https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'];function t(i){if(i>=u.length){setStatus('Impossibile caricare XLSX lib','error');return}var s=document.createElement('script');s.src=u[i];s.onload=function(){XLSX_LOADED=true;cb()};s.onerror=function(){t(i+1)};document.head.appendChild(s)}t(0)}
+
+var S={ordersFile:null,settlementFile:null,ordersRaw:null,settlementRaw:null,
+  matched:[],unmatchedOrders:[],unmatchedSettlements:[],
+  selectedMonth:'all',sortKey:'orderDate',sortDir:'desc',filterSearch:'',filterAff:'all',filterRef:'all'};
+
+// Column maps
+var SETT_MAP={
+  orderId:['Order/adjustment ID'],statementDate:['Statement date'],status:['Status'],type:['Type'],
+  quantity:['Quantity'],productName:['Product name'],skuName:['SKU name'],
+  orderCreatedDate:['Order created date'],orderDeliveryDate:['Order delivery date'],
+  totalSettlement:['Total settlement amount'],netSales:['Net sales'],shipping:['Shipping'],fees:['Fees'],
+  subtotalBeforeDiscounts:['Subtotal before discounts'],sellerDiscounts:['Seller discounts'],
+  refundSubtotal:['Refund subtotal before seller discounts'],refundSellerDisc:['Refund of seller discounts'],
+  customerShippingFee:['Customer shipping fee'],shippingSubsidy:['Shipping subsidy'],
+  ttShippingFee:['TikTok Shop shipping fee'],refundedCustomerShipping:['Refunded customer shipping fee'],
+  actualReturnShipping:['Actual return shipping fee'],
+  ttCommission:['TikTok Shop commission fee'],
+  affiliateCommission:['Affiliate Commission'],affiliatePartner:['Affiliate partner commission'],
+  affiliateShopAds:['Affiliate Shop Ads commission'],affiliatePartnerShopAds:['Affiliate Partner shop ads commission'],
+  eprFee:['EPR Pay on Behalf service fee'],cofundedPromo:['Co-funded promotion (seller-funded)'],
+  smartPromoFee:['Smart Promotion fee'],smartPromoFeeTax:['Smart Promotion fee tax'],
+  campaignServiceFee:['Campaign service fee'],
+  affiliateDeposit:['Affiliate commission deposit'],affiliateRefund:['Affiliate commission refund'],
+  customerPayment:['Customer payment'],customerRefund:['Customer refund'],
+  platformDiscounts:['Platform discounts'],platformDiscountsRefund:['Platform discounts refund'],
+  sellerCofundedVoucher:['Seller co-funded voucher discount']
+};
+var ORD_MAP={
+  orderId:['Order ID'],orderStatus:['Order Status'],orderSubstatus:['Order Substatus'],
+  cancelReturnType:['Cancelation/Return Type'],sellerSku:['Seller SKU'],productName:['Product Name'],
+  quantity:['Quantity'],createdTime:['Created Time'],deliveredTime:['Delivered Time'],
+  deliveryOption:['Delivery Option'],productCategory:['Product Category']
+};
+
+// Utils
+function cl(v){return v==null?'':String(v).replace(/\t+/g,'').trim()}
+function mapCols(h,m){var r={};for(var k in m){var c=m[k];for(var i=0;i<h.length;i++){var hh=cl(h[i]).toLowerCase();for(var j=0;j<c.length;j++){if(hh===c[j].toLowerCase()){r[k]=i;break}}if(r[k]!==undefined)break}}return r}
+function pN(v){if(v==null||v==='')return 0;if(typeof v==='number')return v;var s=cl(v);if(!s||s==='N/A'||s==='/')return 0;return parseFloat(s.replace(/[€EUR\s]/g,'').replace(',','.'))||0}
+function pD(v){if(!v)return null;if(v instanceof Date)return isNaN(v)?null:v;var s=cl(v);if(!s)return null;var d;if(/^\d{4}[\/\-]/.test(s))d=new Date(s.replace(/\//g,'-').split(' ')[0]);else if(/^\d{1,2}\/\d{1,2}\/\d{4}/.test(s)){var p=s.split(' ')[0].split('/');d=new Date(p[2]+'-'+p[0].padStart(2,'0')+'-'+p[1].padStart(2,'0'))}else d=new Date(s);return d&&!isNaN(d)?d:null}
+function fE(n){return n==null||isNaN(n)?'—':new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'}).format(n)}
+function fP(n){return n==null||isNaN(n)||!isFinite(n)?'—':(n*100).toFixed(1)+'%'}
+function fD(d){return d?d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}):'—'}
+function dB(a,b){return a&&b?Math.round((b-a)/864e5):null}
+function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function setStatus(m,t){var e=document.getElementById('status-msg');e.textContent=m;e.className='status-msg'+(t?' '+t:'');e.classList.remove('hidden')}
+function updateBtn(){document.getElementById('btn-run').disabled=!(S.ordersFile&&S.settlementFile)}
+
+// CSV parser
+function parseCSV(t){if(t.charCodeAt(0)===0xFEFF)t=t.substring(1);var rows=[],row=[],cell='',inQ=false;for(var i=0;i<t.length;i++){var c=t[i],n=t[i+1];if(inQ){if(c==='"'&&n==='"'){cell+='"';i++}else if(c==='"')inQ=false;else cell+=c}else{if(c==='"')inQ=true;else if(c===','){row.push(cell);cell=''}else if(c==='\n'||(c==='\r'&&n==='\n')){row.push(cell);cell='';if(row.some(function(v){return v!==''}))rows.push(row);row=[];if(c==='\r')i++}else if(c==='\r'){row.push(cell);cell='';if(row.some(function(v){return v!==''}))rows.push(row);row=[]}else cell+=c}}if(cell||row.length){row.push(cell);if(row.some(function(v){return v!==''}))rows.push(row)}return rows}
+
+// XLSX dimension fix
+function fixRef(ws){var mr=0,mc=0,f=false;var k=Object.keys(ws);for(var i=0;i<k.length;i++){if(k[i][0]==='!')continue;try{var c=XLSX.utils.decode_cell(k[i]);f=true;if(c.r>mr)mr=c.r;if(c.c>mc)mc=c.c}catch(e){}}if(f)ws['!ref']=XLSX.utils.encode_range({s:{r:0,c:0},e:{r:mr,c:mc}})}
+
+// File handling
+function handleDrop(e,t){e.preventDefault();e.currentTarget.style.borderColor='';e.currentTarget.style.background='';if(e.dataTransfer.files[0])store(e.dataTransfer.files[0],t)}
+function handleFileSelect(inp,t){if(inp.files[0])store(inp.files[0],t)}
+function store(f,t){if(t==='orders')S.ordersFile=f;else S.settlementFile=f;document.getElementById('zone-'+t).classList.add('loaded');document.getElementById('hint-'+t).innerHTML='<span class="upload-stats">'+esc(f.name)+'</span>';document.getElementById('status-msg').classList.add('hidden');document.getElementById('results').classList.add('hidden');updateBtn()}
+function readFile(f,cb){var r=new FileReader();r.onload=function(e){cb(new Uint8Array(e.target.result))};r.onerror=function(){cb(null)};r.readAsArrayBuffer(f)}
+function parseFile(f,d){var csv=f.name.toLowerCase().endsWith('.csv');if(csv){var t=new TextDecoder('utf-8').decode(d);var rows=parseCSV(t);if(!rows.length)return null;return{headers:rows[0].map(cl),rows:rows.slice(1)}}else{if(!XLSX_LOADED)return null;var wb=XLSX.read(d,{type:'array',cellDates:true});var ws=wb.Sheets[wb.SheetNames[0]];fixRef(ws);var j=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});if(!j.length)return null;return{headers:j[0].map(cl),rows:j.slice(1).filter(function(r){return r.some(function(c){return c!==''&&c!=null})})}}}
+
+function runAnalysis(){
+  if(!S.ordersFile||!S.settlementFile)return;
+  setStatus('Caricamento...');document.getElementById('btn-run').disabled=true;document.getElementById('results').classList.add('hidden');
+  var needX=!S.ordersFile.name.toLowerCase().endsWith('.csv')||!S.settlementFile.name.toLowerCase().endsWith('.csv');
+  function go(){
+    readFile(S.ordersFile,function(od){if(!od){setStatus('Errore file ordini','error');updateBtn();return}
+    readFile(S.settlementFile,function(sd){if(!sd){setStatus('Errore file settlement','error');updateBtn();return}
+      try{
+        var o=parseFile(S.ordersFile,od),s=parseFile(S.settlementFile,sd);
+        if(!o||!o.rows.length){setStatus('File ordini vuoto','error');updateBtn();return}
+        if(!s||!s.rows.length){setStatus('File settlement vuoto','error');updateBtn();return}
+        document.getElementById('hint-orders').innerHTML='<span class="upload-stats">'+esc(S.ordersFile.name)+' — '+o.rows.length.toLocaleString()+' righe</span>';
+        document.getElementById('hint-settlement').innerHTML='<span class="upload-stats">'+esc(S.settlementFile.name)+' — '+s.rows.length.toLocaleString()+' righe</span>';
+        S.ordersRaw=o;S.settlementRaw=s;runMatch();setStatus('Analisi completata!','ok');
+      }catch(e){setStatus('Errore: '+e.message,'error');console.error(e)}updateBtn()})})
+  }
+  if(needX)loadXLSX(go);else go();
+}
+
+function runMatch(){
+  var oCm=mapCols(S.ordersRaw.headers,ORD_MAP),sCm=mapCols(S.settlementRaw.headers,SETT_MAP);
+  if(oCm.orderId==null){setStatus('Colonna Order ID non trovata!','error');return}
+  if(sCm.orderId==null){setStatus('Colonna Order/adjustment ID non trovata!','error');return}
+
+  // Parse orders -> metadata grouped by Order ID
+  var oMap={};
+  S.ordersRaw.rows.forEach(function(row){
+    function g(k){return oCm[k]!=null?row[oCm[k]]:null}
+    var id=cl(g('orderId'));if(!id)return;
+    if(!oMap[id])oMap[id]={orderId:id,orderStatus:cl(g('orderStatus')),createdTime:pD(g('createdTime')),deliveredTime:pD(g('deliveredTime')),products:[],skus:[],totalQty:0};
+    var pn=cl(g('productName')),sk=cl(g('sellerSku'));
+    if(pn&&oMap[id].products.indexOf(pn)===-1)oMap[id].products.push(pn);
+    if(sk&&oMap[id].skus.indexOf(sk)===-1)oMap[id].skus.push(sk);
+    oMap[id].totalQty+=pN(g('quantity'));
+  });
+
+  // Parse settlement -> financials grouped by Order ID
+  var sMap={};
+  var sFields=['totalSettlement','netSales','shipping','fees','subtotalBeforeDiscounts','sellerDiscounts',
+    'refundSubtotal','refundSellerDisc','customerShippingFee','shippingSubsidy','ttShippingFee',
+    'ttCommission','affiliateCommission','affiliatePartner','affiliateShopAds','affiliatePartnerShopAds',
+    'eprFee','cofundedPromo','smartPromoFee','smartPromoFeeTax','campaignServiceFee',
+    'affiliateDeposit','affiliateRefund','customerPayment','customerRefund','platformDiscounts','sellerCofundedVoucher'];
+  S.settlementRaw.rows.forEach(function(row){
+    function g(k){return sCm[k]!=null?row[sCm[k]]:null}
+    var id=cl(g('orderId'));if(!id)return;
+    if(!sMap[id])sMap[id]={orderId:id,stmtDate:null,delivDate:null,createDate:null,products:[],lines:0};
+    var o=sMap[id];o.lines++;
+    if(!o.stmtDate)o.stmtDate=pD(g('statementDate'));
+    if(!o.delivDate)o.delivDate=pD(g('orderDeliveryDate'));
+    if(!o.createDate)o.createDate=pD(g('orderCreatedDate'));
+    var pn=cl(g('productName'));if(pn&&o.products.indexOf(pn)===-1)o.products.push(pn);
+    sFields.forEach(function(f){o[f]=(o[f]||0)+pN(g(f))});
+  });
+
+  // Match
+  var matched=[],unmO=[],unmS=[],used={};
+  for(var id in oMap){
+    var ord=oMap[id],se=sMap[id];
+    if(se){
+      used[id]=true;
+      var a={orderId:id,
+        orderDate:ord.createdTime||se.createDate,deliveryDate:ord.deliveredTime||se.delivDate,
+        orderStatus:ord.orderStatus,productName:ord.products.join(', ')||se.products.join(', '),
+        sellerSku:ord.skus.join(', '),quantity:ord.totalQty,
+        stmtDate:se.stmtDate,settLines:se.lines};
+      // Copy all financial fields from settlement
+      sFields.forEach(function(f){a[f]=se[f]||0});
+      // Computed
+      a.affOrganic=a.affiliateCommission+a.affiliatePartner+a.affiliatePartnerShopAds+a.affiliateDeposit+a.affiliateRefund;
+      a.affAds=a.affiliateShopAds;
+      a.totalAffFees=a.affOrganic+a.affAds;
+      a.totalPromoFees=a.cofundedPromo+a.smartPromoFee+a.smartPromoFeeTax+a.campaignServiceFee;
+      a.paymentDelay=dB(a.deliveryDate,a.stmtDate);
+      // Commission % on customer payment (what TikTok charges)
+      a.ttCommPct=a.customerPayment?Math.abs(a.ttCommission)/a.customerPayment:0;
+      // Affiliate % on subtotal
+      a.affPct=a.subtotalBeforeDiscounts?Math.abs(a.totalAffFees)/a.subtotalBeforeDiscounts:0;
+      // Margin = settlement / customer payment
+      a.marginPct=a.customerPayment?a.totalSettlement/a.customerPayment:0;
+      // Formula check
+      a.formulaCheck=Math.abs(a.totalSettlement-(a.netSales+a.shipping+a.fees));
+      // Flags
+      a.hasAffOrganic=a.affOrganic!==0;a.hasAffAds=a.affAds!==0;a.hasRefund=a.refundSubtotal!==0||a.customerRefund!==0;
+      a.isFullRefund=a.totalSettlement===0&&a.refundSubtotal!==0;
+      matched.push(a);
+    }else{unmO.push(ord)}
+  }
+  for(var sid in sMap){if(!used[sid]&&!oMap[sid])unmS.push(sMap[sid])}
+
+  S.matched=matched;S.unmatchedOrders=unmO;S.unmatchedSettlements=unmS;
+  console.log('Match:',matched.length,'| Unmatched orders:',unmO.length,'| Unmatched sett:',unmS.length);
+  renderAll();
+}
+
+function renderAll(){
+  document.getElementById('results').classList.remove('hidden');
+  document.getElementById('manual-standalone').innerHTML='';
+  renderSummary();renderMonths();renderDashboard();renderChecks();renderTable();renderUnmatched();renderManual();
+}
+function getF(){
+  var d=S.matched;
+  if(S.selectedMonth!=='all')d=d.filter(function(r){if(!r.orderDate)return false;return r.orderDate.getFullYear()+'-'+String(r.orderDate.getMonth()+1).padStart(2,'0')===S.selectedMonth});
+  return d;
+}
+function renderSummary(){
+  var h='<span class="badge badge-ok">'+S.matched.length+' riconciliati</span>';
+  if(S.unmatchedOrders.length)h+='<span class="badge badge-warn">'+S.unmatchedOrders.length+' ordini senza incasso</span>';
+  if(S.unmatchedSettlements.length)h+='<span class="badge badge-warn">'+S.unmatchedSettlements.length+' incassi senza ordine</span>';
+  document.getElementById('match-summary').innerHTML=h;
+}
+function renderMonths(){
+  var ms={};S.matched.forEach(function(d){if(d.orderDate){var k=d.orderDate.getFullYear()+'-'+String(d.orderDate.getMonth()+1).padStart(2,'0');ms[k]=true}});
+  var keys=Object.keys(ms).sort();if(keys.length<2){document.getElementById('month-selector').innerHTML='';return}
+  var mn={'01':'Gen','02':'Feb','03':'Mar','04':'Apr','05':'Mag','06':'Giu','07':'Lug','08':'Ago','09':'Set','10':'Ott','11':'Nov','12':'Dic'};
+  var h='<button class="month-btn'+(S.selectedMonth==='all'?' active':'')+'" onclick="setMonth(\'all\')">Tutti</button>';
+  keys.forEach(function(m){var p=m.split('-');h+='<button class="month-btn'+(S.selectedMonth===m?' active':'')+'" onclick="setMonth(\''+m+'\')">'+(mn[p[1]]||p[1])+' '+p[0]+'</button>'});
+  document.getElementById('month-selector').innerHTML=h;
+}
+function setMonth(m){S.selectedMonth=m;renderMonths();renderDashboard();renderChecks();renderTable()}
+function switchTab(n,b){if(b){document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});b.classList.add('active')}
+  ['dashboard','checks','table','unmatched','manual'].forEach(function(t){var e=document.getElementById('tab-'+t);if(e)e.classList.toggle('hidden',t!==n)})}
+
+function renderDashboard(){
+  var data=getF();
+  var T={sub:0,net:0,ship:0,fees:0,sett:0,ttC:0,affOrg:0,affAds:0,epr:0,promo:0,selDisc:0,refund:0,
+    custPay:0,custRef:0,platDisc:0,custShip:0,shipSub:0,ttShip:0};
+  var delays=[];
+  data.forEach(function(d){
+    T.sub+=d.subtotalBeforeDiscounts;T.net+=d.netSales;T.ship+=d.shipping;T.fees+=d.fees;T.sett+=d.totalSettlement;
+    T.ttC+=Math.abs(d.ttCommission);T.affOrg+=Math.abs(d.affOrganic);T.affAds+=Math.abs(d.affAds);
+    T.epr+=Math.abs(d.eprFee);T.promo+=Math.abs(d.totalPromoFees);
+    T.selDisc+=Math.abs(d.sellerDiscounts);T.refund+=Math.abs(d.refundSubtotal);
+    T.custPay+=d.customerPayment;T.custRef+=Math.abs(d.customerRefund);T.platDisc+=d.platformDiscounts;
+    T.custShip+=d.customerShippingFee;T.shipSub+=d.shippingSubsidy;T.ttShip+=Math.abs(d.ttShippingFee);
+    if(d.paymentDelay!=null&&d.paymentDelay>=0)delays.push(d.paymentDelay);
+  });
+  var mD=delays.length?(delays.reduce(function(a,b){return a+b},0)/delays.length).toFixed(0):'—';
+  var nOrdAffOrg=data.filter(function(d){return d.hasAffOrganic}).length;
+  var nOrdAffAds=data.filter(function(d){return d.hasAffAds}).length;
+  var nRefund=data.filter(function(d){return d.hasRefund}).length;
+
+  var h='<div class="stats-grid">';
+  h+=sc('Lordo prodotto',fE(T.sub),'',data.length+' ordini riconciliati');
+  h+=sc('Pagato dal cliente',fE(T.custPay),'blue','Customer payment');
+  h+=sc('Incasso netto',fE(T.sett),'green',fP(T.custPay?T.sett/T.custPay:0)+' del pagato cliente');
+  h+=sc('Commissione TikTok',fE(T.ttC),'red',fP(T.custPay?T.ttC/T.custPay:0)+' del pagato cliente');
+  h+=sc('Affiliati organici',fE(T.affOrg),'amber',nOrdAffOrg+' ordini');
+  h+=sc('Affiliati Shop Ads',fE(T.affAds),'amber',nOrdAffAds+' ordini (GMV Max)');
+  h+=sc('Rimborsi prodotto',fE(T.refund),'red',nRefund+' ordini');
+  h+=sc('Ritardo medio pag.',mD+' gg','blue','dalla consegna al settlement');
+  h+='</div>';
+
+  // Waterfall
+  h+='<div class="card"><h3>Waterfall: da lordo prodotto a incasso netto</h3><div style="margin-top:12px">';
+  var wf=[
+    ['Lordo prodotto (listino)',T.sub,''],['Sconti seller',-T.selDisc,'negative'],
+    ['Rimborsi prodotto',-T.refund,'negative'],
+    ['= Net sales',T.net,'','wf-total'],
+    ['Shipping netto',T.ship,T.ship>=0?'positive':'negative'],
+    ['Commissione TikTok',-T.ttC,'negative'],
+    ['Affiliati organici',-T.affOrg,'negative'],['Affiliati Shop Ads (GMV Max)',-T.affAds,'negative'],
+    ['EPR',-T.epr,'negative'],['Promo/Smart/Campaign',-T.promo,'negative'],
+    ['= Incasso netto (settlement)',T.sett,T.sett>=0?'positive':'negative','wf-total']
+  ];
+  wf.forEach(function(w){if(w[1]===0&&!w[3])return;h+='<div class="wf-row'+(w[3]?' '+w[3]:'')+'"><span class="wf-label">'+w[0]+'</span><span class="wf-val '+w[2]+'">'+fE(w[1])+'</span></div>'});
+  h+='</div></div>';
+
+  // Two columns: cost breakdown + delay
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">';
+  var costs=[{n:'Commissione TikTok',v:T.ttC,c:'#3b82f6'},{n:'Affiliati organici',v:T.affOrg,c:'#f59e0b'},
+    {n:'Affiliati Shop Ads',v:T.affAds,c:'#fb923c'},{n:'EPR',v:T.epr,c:'#8b5cf6'},
+    {n:'Promo/Smart/Campaign',v:T.promo,c:'#ec4899'},{n:'Rimborsi',v:T.refund,c:'#ef4444'},
+    {n:'Sconti seller',v:T.selDisc,c:'#06b6d4'},{n:'Sconti piattaforma',v:T.platDisc,c:'#84cc16'}
+  ].filter(function(c){return c.v>0.01});
+  h+='<div class="card"><h3>Incidenza costi su lordo ('+fE(T.sub)+')</h3>';
+  costs.forEach(function(c){var p=T.sub?(c.v/T.sub*100).toFixed(1):'0';
+    h+='<div class="cost-item"><div class="cost-name"><span class="cost-dot" style="background:'+c.c+'"></span>'+c.n+'</div><div class="cost-values">'+fE(c.v)+' <span class="cost-pct">'+p+'%</span></div></div>'});
+  h+='</div>';
+
+  var bk={'0-5':0,'6-10':0,'11-20':0,'21-31':0,'32+':0};
+  delays.forEach(function(d){if(d<=5)bk['0-5']++;else if(d<=10)bk['6-10']++;else if(d<=20)bk['11-20']++;else if(d<=31)bk['21-31']++;else bk['32+']++});
+  var mx=Math.max.apply(null,Object.values(bk))||1;
+  h+='<div class="card"><h3>Distribuzione ritardo pagamento</h3><div class="bar-chart">';
+  var bc=['#3b82f6','#06b6d4','#f59e0b','#f97316','#ef4444'],bi=0;
+  for(var bkk in bk){var bh=Math.round(bk[bkk]/mx*160);h+='<div class="bar-col"><div class="bar-value">'+bk[bkk]+'</div><div class="bar" style="height:'+bh+'px;background:'+bc[bi]+'"></div><div class="bar-label">'+bkk+' gg</div></div>';bi++}
+  h+='</div></div></div>';
+
+  // Top products
+  var bp={};data.forEach(function(d){var n=(d.productName.split(',')[0]||'').trim()||'?';if(!bp[n])bp[n]={n:n,s:0,b:0,f:0,o:0};bp[n].s+=d.totalSettlement;bp[n].b+=d.subtotalBeforeDiscounts;bp[n].f+=d.fees;bp[n].o++});
+  var pr=Object.values(bp).sort(function(a,b){return b.s-a.s}).slice(0,10);
+  h+='<div class="card"><h3>Top 10 Prodotti</h3><div class="table-wrap"><table><thead><tr><th>Prodotto</th><th>Ordini</th><th>Lordo</th><th>Fees</th><th>Netto</th><th>Margine</th></tr></thead><tbody>';
+  pr.forEach(function(p){var m=p.b?p.s/p.b:0;h+='<tr><td style="max-width:300px;overflow:hidden;text-overflow:ellipsis">'+esc(p.n)+'</td><td>'+p.o+'</td><td>'+fE(p.b)+'</td><td class="negative">'+fE(p.f)+'</td><td class="'+(p.s>=0?'positive':'negative')+'">'+fE(p.s)+'</td><td class="'+(m>=0.5?'positive':'negative')+'">'+fP(m)+'</td></tr>'});
+  h+='</tbody></table></div></div>';
+  document.getElementById('tab-dashboard').innerHTML=h;
+}
+function sc(l,v,c,s){return '<div class="stat-card"><div class="stat-label">'+l+'</div><div class="stat-value '+c+'">'+v+'</div>'+(s?'<div class="stat-sub">'+s+'</div>':'')+'</div>'}
+
+// ============ CHECKS TAB ============
+function renderChecks(){
+  var data=getF();var h='';
+
+  // 1. Formula check: settlement = net_sales + shipping + fees
+  var formulaErrors=data.filter(function(d){return d.formulaCheck>0.02});
+  h+=chk(formulaErrors.length===0?'ok':formulaErrors.length<3?'warn':'err',
+    'Verifica formula: Settlement = Net sales + Shipping + Fees',
+    formulaErrors.length===0?'Tutti i '+data.length+' ordini superano il check (diff < 0.02€)':
+    formulaErrors.length+' ordini con formula che non torna',formulaErrors,'formulaCheck');
+
+  // 2. Commission TT check
+  var noRefData=data.filter(function(d){return !d.isFullRefund&&d.customerPayment>0});
+  var ttPcts=noRefData.map(function(d){return d.ttCommPct});
+  var ttAvg=ttPcts.length?ttPcts.reduce(function(a,b){return a+b},0)/ttPcts.length:0;
+  var ttMin=ttPcts.length?Math.min.apply(null,ttPcts):0;
+  var ttMax=ttPcts.length?Math.max.apply(null,ttPcts):0;
+  var ttOutliers=noRefData.filter(function(d){return d.ttCommPct>0.15||d.ttCommPct<0.01});
+  h+=chk(ttOutliers.length===0?'ok':'warn',
+    'Commissione TikTok: media '+fP(ttAvg)+' (min '+fP(ttMin)+' — max '+fP(ttMax)+')',
+    ttOutliers.length===0?'Tutte le commissioni tra 1% e 15% su customer payment':
+    ttOutliers.length+' ordini con commissione anomala (<1% o >15%)',ttOutliers,'ttCommPct');
+
+  // 3. Affiliate organic check
+  var affOrgData=data.filter(function(d){return d.hasAffOrganic});
+  var affOrgPcts=affOrgData.map(function(d){return d.subtotalBeforeDiscounts?Math.abs(d.affOrganic)/d.subtotalBeforeDiscounts:0});
+  var affOrgAvg=affOrgPcts.length?affOrgPcts.reduce(function(a,b){return a+b},0)/affOrgPcts.length:0;
+  h+=chk('ok','Affiliati organici: '+affOrgData.length+' ordini, fee media '+fP(affOrgAvg),
+    'Commissione affiliato (non GMV Max) su lordo prodotto',null);
+
+  // 4. Affiliate Shop Ads check
+  var affAdsData=data.filter(function(d){return d.hasAffAds});
+  var affAdsPcts=affAdsData.map(function(d){return d.subtotalBeforeDiscounts?Math.abs(d.affAds)/d.subtotalBeforeDiscounts:0});
+  var affAdsAvg=affAdsPcts.length?affAdsPcts.reduce(function(a,b){return a+b},0)/affAdsPcts.length:0;
+  h+=chk('ok','Affiliati Shop Ads (GMV Max): '+affAdsData.length+' ordini, fee media '+fP(affAdsAvg),
+    'Commissione GMV Max/Shop Ads su lordo prodotto',null);
+
+  // 5. Orders with negative settlement (loss)
+  var negSett=data.filter(function(d){return d.totalSettlement<-0.01&&!d.isFullRefund});
+  h+=chk(negSett.length===0?'ok':'err',
+    'Ordini in perdita (settlement negativo)',
+    negSett.length===0?'Nessun ordine in perdita':negSett.length+' ordini con incasso negativo — da investigare',negSett,'totalSettlement');
+
+  // 6. Full refunds
+  var fullRef=data.filter(function(d){return d.isFullRefund});
+  h+=chk(fullRef.length===0?'ok':'warn',
+    'Rimborsi completi (settlement = 0)',
+    fullRef.length+' ordini rimborsati interamente',fullRef.length<=20?fullRef:null);
+
+  // 7. Settlement > Customer payment (anomaly)
+  var settGtCust=data.filter(function(d){return d.totalSettlement>d.customerPayment+0.01&&d.customerPayment>0});
+  h+=chk(settGtCust.length===0?'ok':'warn',
+    'Incasso > pagato dal cliente',
+    settGtCust.length===0?'Nessuna anomalia':settGtCust.length+' ordini dove il settlement supera il customer payment (sconti piattaforma o shipping subsidy)',
+    settGtCust.length<=20?settGtCust:null);
+
+  // 8. Unmatched orders summary
+  h+=chk(S.unmatchedOrders.length===0?'ok':S.unmatchedOrders.length<50?'warn':'err',
+    S.unmatchedOrders.length+' ordini senza incasso',
+    'Ordini presenti nel file ordini ma senza corrispondente settlement. Normale per ordini di fine mese.',null);
+
+  document.getElementById('tab-checks').innerHTML='<div class="card"><h2>Controlli e Verifiche</h2><p style="font-size:13px;color:#64748b;margin-bottom:20px">Controlli automatici su '+data.length+' ordini riconciliati. Clicca su un controllo per vedere i dettagli.</p>'+h+'</div>';
+}
+
+function chk(type,title,detail,items,valField){
+  var id='chk_'+Math.random().toString(36).substr(2,6);
+  var h='<div class="check-card check-'+type+'"><div class="check-title">'+(type==='ok'?'&#10003; ':type==='warn'?'&#9888; ':'&#10007; ')+title+'</div><div class="check-detail">'+detail+'</div>';
+  if(items&&items.length>0){
+    h+='<button class="toggle-btn" style="margin-top:8px" onclick="document.getElementById(\''+id+'\').classList.toggle(\'hidden\')">Mostra '+items.length+' ordini</button>';
+    h+='<div id="'+id+'" class="hidden detail-row" style="margin-top:8px"><table><thead><tr><th>Order ID</th><th>Prodotto</th><th>Lordo</th><th>Settlement</th><th>TT Comm</th><th>Aff.Org</th><th>Aff.Ads</th>'+(valField?'<th>Valore</th>':'')+'</tr></thead><tbody>';
+    items.forEach(function(d){
+      h+='<tr><td style="font-family:monospace;font-size:11px">'+esc(d.orderId)+'</td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis">'+esc((d.productName||'').substring(0,30))+'</td><td>'+fE(d.subtotalBeforeDiscounts)+'</td><td class="'+(d.totalSettlement>=0?'positive':'negative')+'">'+fE(d.totalSettlement)+'</td><td>'+fE(d.ttCommission)+'</td><td>'+fE(d.affOrganic)+'</td><td>'+fE(d.affAds)+'</td>';
+      if(valField){var v=d[valField];h+='<td>'+(typeof v==='number'?(v<1?fP(v):v.toFixed(2)):v)+'</td>'}
+      h+='</tr>';
+    });
+    h+='</tbody></table></div>';
+  }
+  h+='</div>';return h;
+}
+
+// ============ DETAIL TABLE ============
+function renderTable(){
+  var data=getF().slice();
+  if(S.filterSearch){var s=S.filterSearch.toLowerCase();data=data.filter(function(r){return r.orderId.includes(s)||r.productName.toLowerCase().includes(s)||(r.sellerSku||'').toLowerCase().includes(s)})}
+  if(S.filterAff==='organic')data=data.filter(function(r){return r.hasAffOrganic});
+  if(S.filterAff==='ads')data=data.filter(function(r){return r.hasAffAds});
+  if(S.filterAff==='none')data=data.filter(function(r){return !r.hasAffOrganic&&!r.hasAffAds});
+  if(S.filterRef==='yes')data=data.filter(function(r){return r.hasRefund});
+  if(S.filterRef==='no')data=data.filter(function(r){return !r.hasRefund});
+  var sk=S.sortKey,sd=S.sortDir;
+  data.sort(function(a,b){var va=a[sk],vb=b[sk];if(va instanceof Date){va=va?va.getTime():0;vb=vb?vb.getTime():0}if(typeof va==='string')return sd==='asc'?va.localeCompare(vb):vb.localeCompare(va);return sd==='asc'?(va||0)-(vb||0):(vb||0)-(va||0)});
+
+  var ar=function(k){return sk===k?(sd==='asc'?' ↑':' ↓'):''};
+  var h='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px"><h2 style="margin:0">Dettaglio Ordini ('+data.length+')</h2><button class="btn btn-primary" onclick="exportCSV()">Export CSV</button></div>';
+  h+='<div class="filters"><input class="filter-input" style="min-width:220px" placeholder="Cerca ordine, prodotto, SKU..." value="'+S.filterSearch+'" oninput="S.filterSearch=this.value;renderTable()">';
+  h+='<select class="filter-input" onchange="S.filterAff=this.value;renderTable()"><option value="all"'+(S.filterAff==='all'?' selected':'')+'>Affiliato: Tutti</option><option value="organic"'+(S.filterAff==='organic'?' selected':'')+'>Aff. Organico</option><option value="ads"'+(S.filterAff==='ads'?' selected':'')+'>Aff. Shop Ads</option><option value="none"'+(S.filterAff==='none'?' selected':'')+'>Nessun affiliato</option></select>';
+  h+='<select class="filter-input" onchange="S.filterRef=this.value;renderTable()"><option value="all"'+(S.filterRef==='all'?' selected':'')+'>Rimborsi: Tutti</option><option value="yes"'+(S.filterRef==='yes'?' selected':'')+'>Con rimborso</option><option value="no"'+(S.filterRef==='no'?' selected':'')+'>Senza rimborso</option></select></div>';
+
+  var cols=[['orderId','Order ID'],['orderDate','Data'],['productName','Prodotto'],['quantity','Qty'],
+    ['subtotalBeforeDiscounts','Lordo'],['sellerDiscounts','Sc.Sell'],['netSales','Net Sales'],
+    ['shipping','Ship'],['ttCommission','Fee TT'],['affOrganic','Aff.Org'],['affAds','Aff.Ads'],
+    ['eprFee','EPR'],['totalPromoFees','Promo'],['customerPayment','Cust.Pay'],
+    ['totalSettlement','Incasso'],['marginPct','Marg.'],['paymentDelay','Rit.']];
+  _tableData=data.slice(0,500);
+  h+='<div class="table-wrap" style="max-height:600px;overflow-y:auto"><table><thead><tr>';
+  cols.forEach(function(c){h+='<th onclick="sortTable(\''+c[0]+'\')">'+c[1]+ar(c[0])+'</th>'});
+  h+='</tr></thead><tbody>';
+  _tableData.forEach(function(r,idx){
+    h+='<tr class="expandable" onclick="toggleOrderDetail(this,'+idx+')" title="Clicca per dettaglio">';
+    h+='<td style="font-family:monospace;font-size:11px">'+esc(r.orderId)+'</td>';
+    h+='<td>'+fD(r.orderDate)+'</td>';
+    h+='<td style="max-width:160px;overflow:hidden;text-overflow:ellipsis" title="'+esc(r.productName)+'">'+esc((r.productName||'').substring(0,30))+'</td>';
+    h+='<td>'+r.quantity+'</td>';
+    h+='<td>'+fE(r.subtotalBeforeDiscounts)+'</td>';
+    h+='<td class="'+(r.sellerDiscounts<0?'negative':'')+'">'+fE(r.sellerDiscounts)+'</td>';
+    h+='<td>'+fE(r.netSales)+'</td>';
+    h+='<td>'+fE(r.shipping)+'</td>';
+    h+='<td class="negative">'+fE(r.ttCommission)+'</td>';
+    h+='<td class="'+(r.affOrganic?'negative':'')+'">'+fE(r.affOrganic)+'</td>';
+    h+='<td class="'+(r.affAds?'negative':'')+'">'+fE(r.affAds)+'</td>';
+    h+='<td class="'+(r.eprFee?'negative':'')+'">'+fE(r.eprFee)+'</td>';
+    h+='<td class="'+(r.totalPromoFees?'negative':'')+'">'+fE(r.totalPromoFees)+'</td>';
+    h+='<td>'+fE(r.customerPayment)+'</td>';
+    h+='<td class="'+(r.totalSettlement>=0?'positive':'negative')+'" style="font-weight:600">'+fE(r.totalSettlement)+'</td>';
+    h+='<td class="'+(r.marginPct>=0.5?'positive':'negative')+'">'+fP(r.marginPct)+'</td>';
+    h+='<td>'+(r.paymentDelay!=null?r.paymentDelay+'g':'—')+'</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  if(data.length>500)h+='<div style="padding:12px;text-align:center;color:#94a3b8;font-size:13px">Primi 500 di '+data.length+'</div>';
+  h+='</div>';document.getElementById('tab-table').innerHTML=h;
+}
+function sortTable(k){if(S.sortKey===k)S.sortDir=S.sortDir==='asc'?'desc':'asc';else{S.sortKey=k;S.sortDir='desc'}renderTable()}
+
+// Store current filtered+sorted data for expand lookup
+var _tableData=[];
+function toggleOrderDetail(tr,idx){
+  var next=tr.nextElementSibling;
+  if(next&&next.classList.contains('expand-row')){next.remove();return}
+  // Remove any other open detail
+  document.querySelectorAll('.expand-row').forEach(function(e){e.remove()});
+  var r=_tableData[idx];if(!r)return;
+  var ntr=document.createElement('tr');ntr.className='expand-row';
+  var td=document.createElement('td');td.colSpan=17;
+  td.innerHTML=buildOrderDetail(r);
+  ntr.appendChild(td);tr.parentNode.insertBefore(ntr,tr.nextSibling);
+}
+
+function buildOrderDetail(r){
+  var fc=function(v){return v<0?'negative':v>0?'positive':''};
+  var h='<div class="order-detail">';
+  // Left: Waterfall da lordo a incasso
+  h+='<div class="od-section"><h4>Waterfall: dal lordo all\'incasso</h4>';
+  h+='<div class="od-row"><span class="od-label">Lordo prodotto (pre-sconti)</span><span class="od-val">'+fE(r.subtotalBeforeDiscounts)+'</span></div>';
+  if(r.sellerDiscounts)h+='<div class="od-row od-sub"><span class="od-label">Sconti venditore</span><span class="od-val '+fc(r.sellerDiscounts)+'">'+fE(r.sellerDiscounts)+'</span></div>';
+  if(r.refundSubtotal)h+='<div class="od-row od-sub"><span class="od-label">Rimborso prodotto</span><span class="od-val '+fc(r.refundSubtotal)+'">'+fE(r.refundSubtotal)+'</span></div>';
+  h+='<div class="od-row" style="border-top:1px solid #e2e8f0;padding-top:6px"><span class="od-label"><strong>Net Sales</strong></span><span class="od-val">'+fE(r.netSales)+'</span></div>';
+  h+='<div class="od-row"><span class="od-label">Shipping netto</span><span class="od-val">'+fE(r.shipping)+'</span></div>';
+  if(r.customerShippingFee)h+='<div class="od-row od-sub"><span class="od-label">Spedizione cliente</span><span class="od-val">'+fE(r.customerShippingFee)+'</span></div>';
+  if(r.shippingSubsidy)h+='<div class="od-row od-sub"><span class="od-label">Sussidio spedizione</span><span class="od-val">'+fE(r.shippingSubsidy)+'</span></div>';
+  if(r.ttShippingFee)h+='<div class="od-row od-sub"><span class="od-label">Fee spedizione TT</span><span class="od-val '+fc(r.ttShippingFee)+'">'+fE(r.ttShippingFee)+'</span></div>';
+  h+='<div class="od-row" style="border-top:1px solid #e2e8f0;padding-top:6px"><span class="od-label"><strong>Fees totali</strong></span><span class="od-val negative">'+fE(r.fees)+'</span></div>';
+  h+='<div class="od-row od-sub"><span class="od-label">Commissione TikTok</span><span class="od-val negative">'+fE(r.ttCommission)+'</span></div>';
+  if(r.affOrganic)h+='<div class="od-row od-sub"><span class="od-label">Affiliati organici</span><span class="od-val negative">'+fE(r.affOrganic)+'</span></div>';
+  if(r.affAds)h+='<div class="od-row od-sub"><span class="od-label">Affiliati Shop Ads</span><span class="od-val negative">'+fE(r.affAds)+'</span></div>';
+  if(r.eprFee)h+='<div class="od-row od-sub"><span class="od-label">EPR fee</span><span class="od-val negative">'+fE(r.eprFee)+'</span></div>';
+  if(r.cofundedPromo)h+='<div class="od-row od-sub"><span class="od-label">Promo co-funded</span><span class="od-val negative">'+fE(r.cofundedPromo)+'</span></div>';
+  if(r.smartPromoFee)h+='<div class="od-row od-sub"><span class="od-label">Smart Promotion</span><span class="od-val negative">'+fE(r.smartPromoFee)+'</span></div>';
+  if(r.campaignServiceFee)h+='<div class="od-row od-sub"><span class="od-label">Campaign service fee</span><span class="od-val negative">'+fE(r.campaignServiceFee)+'</span></div>';
+  h+='<div class="od-row od-total"><span class="od-label">INCASSO NETTO (Settlement)</span><span class="od-val '+(r.totalSettlement>=0?'positive':'negative')+'">'+fE(r.totalSettlement)+'</span></div>';
+  h+='<div class="od-row od-sub"><span class="od-label">Verifica: Net Sales + Shipping + Fees</span><span class="od-val">'
+    +fE(r.netSales)+' + '+fE(r.shipping)+' + '+fE(r.fees)+' = '+fE(r.netSales+r.shipping+r.fees)+'</span></div>';
+  var chk=r.formulaCheck;
+  h+='<div class="od-row od-sub"><span class="od-label">Scostamento formula</span><span class="od-val '+(chk<0.02?'positive':'negative')+'">'+fE(chk)+(chk<0.02?' ✓':' ✗')+'</span></div>';
+  h+='</div>';
+
+  // Right: percentuali e info
+  h+='<div class="od-section"><h4>Analisi costi e margine</h4>';
+  h+='<div class="od-row"><span class="od-label">Customer payment</span><span class="od-val">'+fE(r.customerPayment)+'</span></div>';
+  if(r.customerRefund)h+='<div class="od-row"><span class="od-label">Customer refund</span><span class="od-val negative">'+fE(r.customerRefund)+'</span></div>';
+  if(r.platformDiscounts)h+='<div class="od-row"><span class="od-label">Sconti piattaforma</span><span class="od-val">'+fE(r.platformDiscounts)+'</span></div>';
+  h+='<div class="od-row" style="border-top:1px solid #e2e8f0;padding-top:6px;margin-top:8px"><span class="od-label"><strong>Commissione TT %</strong></span><span class="od-val">'+fP(r.ttCommPct)+'</span></div>';
+  if(r.hasAffOrganic){var ap=r.subtotalBeforeDiscounts?Math.abs(r.affOrganic)/r.subtotalBeforeDiscounts:0;
+    h+='<div class="od-row"><span class="od-label"><strong>Affiliati organici %</strong></span><span class="od-val">'+fP(ap)+'</span></div>';}
+  if(r.hasAffAds){var aap=r.subtotalBeforeDiscounts?Math.abs(r.affAds)/r.subtotalBeforeDiscounts:0;
+    h+='<div class="od-row"><span class="od-label"><strong>Affiliati Shop Ads %</strong></span><span class="od-val">'+fP(aap)+'</span></div>';}
+  h+='<div class="od-row od-total"><span class="od-label">Margine (Settlement / Cust. Pay)</span><span class="od-val '+(r.marginPct>=0.5?'positive':'negative')+'">'+fP(r.marginPct)+'</span></div>';
+  h+='<div style="border-top:1px solid #e2e8f0;margin-top:12px;padding-top:8px">';
+  h+='<h4 style="margin-bottom:6px">Info ordine</h4>';
+  h+='<div class="od-row"><span class="od-label">Stato</span><span class="od-val">'+esc(r.orderStatus||'—')+'</span></div>';
+  h+='<div class="od-row"><span class="od-label">Creazione</span><span class="od-val">'+fD(r.orderDate)+'</span></div>';
+  h+='<div class="od-row"><span class="od-label">Consegna</span><span class="od-val">'+fD(r.deliveryDate)+'</span></div>';
+  h+='<div class="od-row"><span class="od-label">Data settlement</span><span class="od-val">'+fD(r.stmtDate)+'</span></div>';
+  if(r.paymentDelay!=null)h+='<div class="od-row"><span class="od-label">Ritardo pagamento</span><span class="od-val">'+r.paymentDelay+' giorni</span></div>';
+  h+='<div class="od-row"><span class="od-label">Prodotti</span><span class="od-val" style="max-width:250px;white-space:normal;text-align:right">'+esc(r.productName||'—')+'</span></div>';
+  h+='<div class="od-row"><span class="od-label">SKU</span><span class="od-val" style="max-width:250px;white-space:normal;text-align:right">'+esc(r.sellerSku||'—')+'</span></div>';
+  h+='<div class="od-row"><span class="od-label">Quantità</span><span class="od-val">'+r.quantity+'</span></div>';
+  h+='<div class="od-row"><span class="od-label">Righe settlement</span><span class="od-val">'+r.settLines+'</span></div>';
+  h+='</div></div></div>';
+  return h;
+}
+
+function exportCSV(){
+  var d=getF();
+  var hdr=['Order ID','Data','Prodotto','SKU','Qty','Lordo','Sc.Seller','Net Sales','Shipping',
+    'Fee TT','TT%','Aff.Organico','Aff.ShopAds','EPR','Promo','Customer Pay','Customer Refund',
+    'Rimborso prod','Settlement','Margine%','Ritardo gg'];
+  var rows=d.map(function(r){return[r.orderId,fD(r.orderDate),'"'+(r.productName||'').replace(/"/g,'""')+'"',
+    '"'+(r.sellerSku||'')+'"',r.quantity,r.subtotalBeforeDiscounts.toFixed(2),r.sellerDiscounts.toFixed(2),
+    r.netSales.toFixed(2),r.shipping.toFixed(2),r.ttCommission.toFixed(2),(r.ttCommPct*100).toFixed(1)+'%',
+    r.affOrganic.toFixed(2),r.affAds.toFixed(2),r.eprFee.toFixed(2),r.totalPromoFees.toFixed(2),
+    r.customerPayment.toFixed(2),r.customerRefund.toFixed(2),r.refundSubtotal.toFixed(2),
+    r.totalSettlement.toFixed(2),(r.marginPct*100).toFixed(1)+'%',r.paymentDelay!=null?r.paymentDelay:'']});
+  var csv=[hdr].concat(rows).map(function(r){return r.join(';')}).join('\n');
+  var b=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='tiktok_reconciliation.csv';a.click();
+}
+
+function renderUnmatched(){
+  var h='<div class="card"><h2>Non Riconciliati</h2>';
+  if(!S.unmatchedOrders.length&&!S.unmatchedSettlements.length){h+='<p class="positive">Tutti riconciliati!</p></div>';document.getElementById('tab-unmatched').innerHTML=h;return}
+  if(S.unmatchedOrders.length){
+    h+='<div class="match-summary"><span class="badge badge-warn">'+S.unmatchedOrders.length+' ordini senza incasso</span></div>';
+    h+='<p style="font-size:13px;color:#64748b;margin-bottom:12px">Ordini nel file ordini senza corrispondente settlement. Normale per ordini di fine mese (&lt;20gg dalla consegna).</p>';
+    h+='<button class="toggle-btn" onclick="document.getElementById(\'uo\').classList.toggle(\'hidden\')">Mostra/Nascondi</button>';
+    h+='<div id="uo" class="hidden detail-row"><table><thead><tr><th>Order ID</th><th>Creazione</th><th>Consegna</th><th>Stato</th><th>Prodotto</th></tr></thead><tbody>';
+    S.unmatchedOrders.forEach(function(o){h+='<tr><td style="font-family:monospace;font-size:11px">'+esc(o.orderId)+'</td><td>'+fD(o.createdTime)+'</td><td>'+fD(o.deliveredTime)+'</td><td>'+esc(o.orderStatus)+'</td><td>'+esc((o.products||[]).join(', ').substring(0,40))+'</td></tr>'});
+    h+='</tbody></table></div>';
+  }
+  if(S.unmatchedSettlements.length){
+    h+='<div class="match-summary" style="margin-top:16px"><span class="badge badge-warn">'+S.unmatchedSettlements.length+' incassi senza ordine</span></div>';
+    h+='<p style="font-size:13px;color:#64748b;margin-bottom:12px">Settlement relativi a ordini del mese precedente. Ignorabili.</p>';
+    h+='<button class="toggle-btn" onclick="document.getElementById(\'us\').classList.toggle(\'hidden\')">Mostra/Nascondi</button>';
+    h+='<div id="us" class="hidden detail-row"><table><thead><tr><th>Order ID</th><th>Data</th><th>Prodotto</th><th>Settlement</th></tr></thead><tbody>';
+    S.unmatchedSettlements.forEach(function(s){h+='<tr><td style="font-family:monospace;font-size:11px">'+esc(s.orderId)+'</td><td>'+fD(s.stmtDate)+'</td><td>'+esc((s.products||[]).join(', ').substring(0,40))+'</td><td>'+fE(s.totalSettlement)+'</td></tr>'});
+    h+='</tbody></table></div>';
+  }
+  h+='</div>';document.getElementById('tab-unmatched').innerHTML=h;
+}
+
+// ============ MANUAL ============
+function getManualHTML(){
+  return '<div class="card manual-content">'+
+  '<h2>Manuale Operativo</h2>'+
+  '<h3><span class="step-num">1</span> Export Ordini</h3><ul>'+
+  '<li><strong>Fonte:</strong> TikTok Seller Center &gt; Orders &gt; Export</li>'+
+  '<li><strong>Periodo:</strong> dal 1° all\'ultimo giorno del mese</li>'+
+  '<li><strong>Stati:</strong> tutti (completati, spediti, cancellati, resi)</li>'+
+  '<li><strong>Formato:</strong> XLSX o CSV</li></ul>'+
+  '<h3><span class="step-num">2</span> Export Incassi/Settlement</h3><ul>'+
+  '<li><strong>Fonte:</strong> TikTok Seller Center &gt; Finance &gt; Settlement &gt; Export</li>'+
+  '<li><strong>Periodo:</strong> dal 1° del mese fino a 20 giorni dopo la fine del mese</li>'+
+  '<li style="margin-left:16px">Esempio Gennaio: 1 Gen &rarr; 20 Feb</li>'+
+  '<li style="margin-left:16px">Esempio Febbraio: 1 Feb &rarr; 20 Mar</li>'+
+  '<li><strong>Motivo:</strong> i piani di settlement TikTok hanno ritardi variabili:</li>'+
+  '<li style="margin-left:16px">Express: 1 giorno | Accelerato: 5 gg | Standard: 8 gg | Iniziale/Differito: 31 gg</li>'+
+  '<li style="margin-left:16px">+ 1-3 giorni lavorativi per elaborazione bancaria</li></ul>'+
+  '<h3><span class="step-num">3</span> Caricamento</h3><ul>'+
+  '<li>Aprire <strong>tiktok-finance.html</strong> nel browser</li>'+
+  '<li>Trascinare i file nelle zone di upload</li>'+
+  '<li>Cliccare <strong>"Carica e Analizza"</strong></li></ul>'+
+  '<h3><span class="step-num">4</span> Cosa controllare</h3><ul>'+
+  '<li><strong>Tab Controlli:</strong> verifiche automatiche su formula, commissioni, anomalie</li>'+
+  '<li><strong>Ordini senza incasso:</strong> normale se &lt;20 gg dalla consegna</li>'+
+  '<li><strong>Incassi senza ordine:</strong> pagamenti del mese precedente, ignorabili</li>'+
+  '<li><strong>Margine negativo:</strong> fee + rimborsi &gt; ricavo, da investigare</li></ul>'+
+  '<h3><span class="step-num">5</span> Come leggere i numeri</h3><ul>'+
+  '<li><strong>Lordo prodotto:</strong> prezzo listino pre-sconti (Subtotal before discounts)</li>'+
+  '<li><strong>Customer payment:</strong> quanto il cliente ha pagato</li>'+
+  '<li><strong>Incasso netto:</strong> Total settlement = Net sales + Shipping + Fees</li>'+
+  '<li><strong>Commissione TT:</strong> ~5-9% del customer payment (varia per categoria)</li>'+
+  '<li><strong>Affiliati organici:</strong> Affiliate Commission — creator non GMV Max</li>'+
+  '<li><strong>Affiliati Shop Ads:</strong> Affiliate Shop Ads commission — campagne GMV Max</li>'+
+  '<li><strong>Margine:</strong> Settlement / Customer payment</li></ul></div>';
+}
+function renderManual(){document.getElementById('tab-manual').innerHTML=getManualHTML()}
+function showManualStandalone(){var e=document.getElementById('manual-standalone');e.innerHTML=e.innerHTML?'':getManualHTML()}
+
+document.addEventListener('DOMContentLoaded',function(){document.getElementById('manual-standalone').innerHTML=getManualHTML();console.log('TikTok Finance OK')});
+</script>
+</body>
+</html>
